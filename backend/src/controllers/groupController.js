@@ -1,8 +1,11 @@
 import {
   createGroup,
+  deleteGroup,
   addMembersToGroup,
   getUserGroups,
   checkGroupMembership,
+  removeMemberFromGroup,
+  findGroupById,
 } from "../models/groupModel.js";
 import { findUserByEmail } from "../models/userModel.js";
 
@@ -25,6 +28,37 @@ export const createNewGroup = async (req, res) => {
     res.status(201).json({
       message: "Group created successfully",
       groupId: group.insertId,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const deleteUserGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    const group = await findGroupById(groupId);
+
+    if (!group) {
+      return res.status(404).json({
+        message: "Group not found",
+      });
+    }
+
+    if (group.created_by !== req.user.id) {
+      return res.status(403).json({
+        message: "Only group creator can delete group",
+      });
+    }
+
+    await deleteGroup(groupId);
+
+    res.status(200).json({
+      message: "Group deleted successfully",
     });
   } catch (error) {
     res.status(500).json({
@@ -79,6 +113,31 @@ export const addGroupMember = async (req, res) => {
 
     res.status(200).json({
       message: "Member added successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const removeGroupMember = async (req, res) => {
+  try {
+    const { groupId, email } = req.body;
+
+    if (!groupId || !email) {
+      return res.status(400).json({
+        message: "All fields are required",
+      });
+    }
+
+    const user = await findUserByEmail(email);
+
+    await removeMemberFromGroup(groupId, user.id);
+
+    res.status(200).json({
+      message: "Member removed successfully",
     });
   } catch (error) {
     res.status(500).json({
