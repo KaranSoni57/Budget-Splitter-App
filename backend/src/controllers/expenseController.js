@@ -4,7 +4,11 @@ import {
   addExpenseSplit,
   getGroupMembers,
   findExpenseById,
+  getGroupExpenses,
+  getExpenseSplits,
 } from "../models/expenseModel.js";
+import { calculateEqualSplit } from "../services/splitservice.js";
+import { calculateBalances } from "../services/balanceService.js";
 
 export const createNewExpense = async (req, res) => {
   try {
@@ -22,7 +26,7 @@ export const createNewExpense = async (req, res) => {
 
     const members = await getGroupMembers(groupId);
 
-    const splitAmount = amount / members.length;
+    const splitAmount = calculateEqualSplit(amount, members.length);
 
     for (const member of members) {
       await addExpenseSplit(expense.insertId, member.user_id, splitAmount);
@@ -55,6 +59,27 @@ export const deleteUserExpense = async (req, res) => {
     await deleteExpense(expenseId);
     res.status(200).json({
       message: "Expense deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const getGroupBalances = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    const expenses = await getGroupExpenses(groupId);
+
+    const splits = await getExpenseSplits(groupId);
+
+    const balances = calculateBalances(expenses, splits);
+
+    res.status(200).json({
+      balances,
     });
   } catch (error) {
     res.status(500).json({

@@ -55,3 +55,32 @@ export const findExpenseById = async (expenseId) => {
 
   return rows[0];
 };
+
+export const getGroupExpenses = async (groupId) => {
+  const [rows] = await pool.query(
+    `
+    SELECT * FROM expenses
+    WHERE group_id = ?
+    `,
+    [groupId],
+  );
+
+  return rows;
+};
+
+export const getExpenseSplits = async (groupId) => {
+  const [rows] = await pool.query(
+    `
+    SELECT expense_splits.*
+    FROM expense_splits
+
+    JOIN expenses
+    ON expense_splits.expense_id = expenses.id
+
+    WHERE expenses.group_id = ?
+    `,
+    [groupId],
+  );
+
+  return rows;
+};
